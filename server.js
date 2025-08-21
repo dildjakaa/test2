@@ -22,7 +22,11 @@ if (!MONGO_URI) {
 }
 
 mongoose
-  .connect(MONGO_URI)
+  .connect(MONGO_URI, {
+    serverSelectionTimeoutMS: 15000,
+    socketTimeoutMS: 60000,
+    maxPoolSize: 5,
+  })
   .then(() => console.log('✅ Подключено к MongoDB'))
   .catch((err) => {
     console.error('❌ Ошибка подключения к MongoDB:', err);
@@ -33,6 +37,11 @@ mongoose
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Lightweight health check to help with warmups
+app.get('/api/health', (_req, res) => {
+  res.json({ ok: true, uptime: process.uptime() });
+});
 
 // Auth: Register
 app.post('/api/auth/register', async (req, res) => {
