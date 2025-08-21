@@ -255,12 +255,21 @@ async function getUserFromToken(req) {
 // Clear all users (no auth required for testing)
 app.post('/api/users/clear-all', async (req, res) => {
   try {
-    const result = await User.deleteMany({});
-    console.log(`🗑️ Cleared ${result.deletedCount} users`);
+    // Сначала получаем всех пользователей для логирования
+    const allUsers = await User.find({});
+    console.log(`🗑️ Found ${allUsers.length} users to delete`);
+    
+    // Удаляем всех пользователей, кроме админа
+    const result = await User.deleteMany({ 
+      usernameLower: { $ne: 'uyqidioiw' } // Не удаляем админа
+    });
+    
+    console.log(`🗑️ Cleared ${result.deletedCount} users (admin preserved)`);
     
     return res.json({ 
-      message: `Cleared ${result.deletedCount} users`,
-      deletedCount: result.deletedCount 
+      message: `Cleared ${result.deletedCount} users (admin preserved)`,
+      deletedCount: result.deletedCount,
+      totalFound: allUsers.length
     });
   } catch (e) {
     console.error('❌ Clear users error:', e);
