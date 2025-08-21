@@ -45,21 +45,37 @@ app.get('/api/health', (_req, res) => {
 
 // Auth: Register
 app.post('/api/auth/register', async (req, res) => {
+  console.log('📝 Registration request received:', { 
+    body: req.body, 
+    headers: req.headers,
+    timestamp: new Date().toISOString()
+  });
+  
   try {
     const { username, password } = req.body || {};
     if (!username || !password) {
+      console.log('❌ Missing username or password');
       return res.status(400).json({ error: 'username and password are required' });
     }
+    
+    console.log('🔍 Checking for existing user...');
     const usernameLower = String(username).trim().toLowerCase();
     const existing = await User.findOne({ usernameLower });
     if (existing) {
+      console.log('❌ Username already taken:', usernameLower);
       return res.status(409).json({ error: 'username already taken' });
     }
+    
+    console.log('🔐 Hashing password...');
     const passwordHash = await bcrypt.hash(password, 10);
+    
+    console.log('💾 Creating user...');
     const user = await User.create({ username: String(username).trim(), usernameLower, passwordHash });
+    
+    console.log('✅ User created successfully:', { id: user._id, username: user.username });
     return res.status(201).json({ id: user._id, username: user.username, createdAt: user.createdAt });
   } catch (e) {
-    console.error('Register error:', e);
+    console.error('❌ Register error:', e);
     return res.status(500).json({ error: 'internal_error' });
   }
 });
