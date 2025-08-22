@@ -478,7 +478,31 @@ app.post('/api/admin/users/:userId/admin', async (req, res) => {
 });
 
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ server, path: '/ws' });
+
+// Keepalive ping to prevent idle disconnects on hosting providers
+function heartbeat() {
+  this.isAlive = true;
+}
+
+wss.on('connection', (ws) => {
+  ws.isAlive = true;
+  ws.on('pong', heartbeat);
+});
+
+const interval = setInterval(() => {
+  wss.clients.forEach((ws) => {
+    if (ws.isAlive === false) return ws.terminate();
+    ws.isAlive = false;
+    try {
+      ws.ping();
+    } catch (_) {}
+  });
+}, 30000);
+
+wss.on('close', function close() {
+  clearInterval(interval);
+});
 
 wss.on('connection', async (ws) => {
   console.log('🔌 Новый клиент подключился');
