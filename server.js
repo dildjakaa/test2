@@ -306,7 +306,19 @@ app.post('/api/chat/send', async (req, res) => {
       text,
       chatId,
     });
-    
+
+    // Broadcast to all websocket clients, same as realtime flow
+    try {
+      const outgoing = JSON.stringify({ type: 'message', message: msg });
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(outgoing);
+        }
+      });
+    } catch (broadcastErr) {
+      console.error('⚠️ Broadcast error after HTTP send:', broadcastErr);
+    }
+
     return res.json({ message: 'Message sent successfully', msg });
   } catch (e) {
     console.error('❌ Send message error:', e);
